@@ -46,7 +46,7 @@ qint64 AudioInfo::writeData(const char *data, qint64 len)
         const int numSamples = len / sampleBytes;
         quint32 maxValue = 0;
         const unsigned char *ptr = reinterpret_cast<const unsigned char *>(data);
-        double* ptr1 = new double[512];
+        double* ptr1 = new double[numSamples * format.channelCount()];
         for (int i = 0; i < numSamples; ++i) {
             for (int j = 0; j < format.channelCount(); ++j) {
                 quint32 value = 0;
@@ -60,7 +60,7 @@ qint64 AudioInfo::writeData(const char *data, qint64 len)
         double* spectrogramm = Calculate(ptr1);
         int index = 0;
         double max = 0;
-        for (int i = 1; i < 128; i++ )
+        for (int i = 1; i < 30 * 16; i++ )
         {
             if (max < spectrogramm[i])
             {
@@ -69,7 +69,7 @@ qint64 AudioInfo::writeData(const char *data, qint64 len)
             }
         }
         delete spectrogramm;
-        double frequency = format.sampleRate() * index / 512;
+        double frequency = format.sampleRate() * index / (numSamples * format.channelCount());
         if (frequency < 60) frequency = 0;
         m_frequency = frequency;
         maxValue = qMin(maxValue, m_maxAmplitude);
@@ -98,8 +98,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
  void MainWindow::startRecording()
  {
-
-     format.setSampleRate(8000);
+     format.setSampleRate(44100);
      format.setChannelCount(2);
      format.setSampleSize(16);
      format.setCodec("audio/pcm");
@@ -115,7 +114,7 @@ MainWindow::MainWindow(QWidget *parent) :
      audioInput = new QAudioInput(info, format, this);
      connect(audioInput, SIGNAL(notify()), SLOT(notifed()));
      connect(audioInfo,SIGNAL(update()),this,SLOT(updateScreen()));
-     audioInput->setBufferSize(1280 * 4);
+     audioInput->setBufferSize(1280 * 4 * 16);
      audioInfo->start();
      audioInput->start(audioInfo);
  }
@@ -126,16 +125,19 @@ MainWindow::MainWindow(QWidget *parent) :
 
  double* AudioInfo::Calculate(double* x)
  {
+     const int channelBytes = format.sampleSize() / 8;
+     const int sampleBytes = format.channelCount() * channelBytes;
+     const int numSamples = 16192 / sampleBytes;
      int lenght;
      int bitsInLenght;
-     if (IsPowerOfTwo(512))
+     if (IsPowerOfTwo((numSamples * format.channelCount())))
      {
-         lenght = 512;
-         bitsInLenght = Log2(512) - 1;
+         lenght = (numSamples * format.channelCount());
+         bitsInLenght = Log2((numSamples * format.channelCount())) - 1;
      }
      else
      {
-         bitsInLenght = Log2(512);
+         bitsInLenght = Log2((numSamples * format.channelCount()));
          lenght = 1 << bitsInLenght;
      }
      ComplexNumber *data = new ComplexNumber[lenght];
