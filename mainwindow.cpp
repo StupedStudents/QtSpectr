@@ -61,18 +61,22 @@ MainWindow::MainWindow(QWidget *parent) :
      audioInput->start(&outBuf);
 
      connect(audioInput, SIGNAL(notify()),SLOT(notifed()));
-     //QTimer::singleShot(100, this, SLOT(stopRecording()));
+     QTimer::singleShot(500, this, SLOT(stopRecording()));
  }
 
  void MainWindow::stopRecording()
  {
-     psbTmp = new QByteArray();
-     *psbTmp = outBuf.buffer();
-     qWarning() << *psbTmp->data();
-     delete psbTmp;
-     audioInput->stop();
-     outBuf.close();
-     delete audioInput;
+     double tmp = 0;
+     for(int i = 0; i < buffer.size(); i++)
+     {
+         //tmp = qMax(tmp,buffer[i]);
+         tmp += buffer[i];
+
+     }
+     tmp /= buffer.size();
+     ui->label->setNum(tmp);
+     buffer.clear();
+     QTimer::singleShot(500, this, SLOT(stopRecording()));
  }
 
  void MainWindow::notifed()
@@ -118,7 +122,8 @@ MainWindow::MainWindow(QWidget *parent) :
      maxValue = qMin(maxValue, quint32(32767));
      m_level = qreal(maxValue) / 32767;
      m_level *= 100;
-     //qWarning() << quer;
+     buffer.push_back(quer);
+    // qWarning() << quer;
      outBuf.reset();
      //outBuf.buffer().clear();
      ui->progressBar->setValue(m_level);

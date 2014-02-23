@@ -8,6 +8,7 @@
 #include <complex>
 #include <iostream>
 #include <valarray>
+#include <vector>
 
 namespace Ui {
 class MainWindow;
@@ -33,6 +34,7 @@ private:
 
     static const double TwoPi = 6.283185307179586;
     void FFTAnalysis(double *AVal, double *FTvl, int Nvl, int Nft);
+    std::vector<double> buffer;
     QFile outputFile;
     QByteArray *psbTmp;
     QAudioFormat format;
