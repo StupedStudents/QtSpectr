@@ -98,17 +98,17 @@ MainWindow::MainWindow(QWidget *parent) :
 
  void MainWindow::startRecording()
  {
-     format.setSampleRate(44100);
+     format.setSampleRate(8000);
      format.setChannelCount(2);
      format.setSampleSize(16);
      format.setCodec("audio/pcm");
      format.setByteOrder(QAudioFormat::LittleEndian);
      format.setSampleType(QAudioFormat::SignedInt);
-     //outBuf.open(QIODevice::ReadWrite | QIODevice::Truncate);
      QAudioDeviceInfo info = QAudioDeviceInfo::availableDevices(QAudio::AudioInput).first();
      if (!info.isFormatSupported(format)) {
          qWarning()<<"default format not supported try to use nearest";
          format = info.nearestFormat(format);
+         qWarning() << format.sampleRate();
      }
      audioInfo = new AudioInfo(format, this);
      audioInput = new QAudioInput(info, format, this);
