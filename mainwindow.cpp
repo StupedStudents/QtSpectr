@@ -60,11 +60,20 @@ qint64 AudioInfo::writeData(const char *data, qint64 len)
         double* spectrogramm = Calculate(ptr1);
         int index = 0;
         double max = 0;
-        for (int i = 1; i < 30 * 16; i++ )
+        double buf = double(format.sampleRate()) / (numSamples * format.channelCount());
+        qWarning() << buf;
+        for (int i = 1; i < 30 * 100; i++ )
         {
-            if (max < spectrogramm[i])
+            if (spectrogramm[i] > 0  && max < spectrogramm[i] &&
+                                        (((i * buf) < 334 && (i * buf) > 325) ||
+                                         ((i * buf) < 251 && (i * buf) > 241) ||
+                                         ((i * buf) < 201 && (i * buf) > 191) ||
+                                         ((i * buf) < 151 && (i * buf) > 141) ||
+                                         ((i * buf) < 115 && (i * buf) > 105) ||
+                                         ((i * buf) < 87 && (i * buf) > 77)))
             {
                 max = spectrogramm[i];
+                qWarning() << spectrogramm[i];
                 index = i;
             }
         }
@@ -85,16 +94,121 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    int r=0,g=255,b=0;
+    QString myStyleSheet = QString(" QProgressBar::chunk { background: rgb(%1,%2,%3); }").arg(QString::number(r)).arg(QString::number(g)).arg(QString::number(b));
+    s = ui->progressBar->styleSheet().append(myStyleSheet);
+    myStyleSheet = QString(" QProgressBar::chunk { background: rgb(255,0,0); }");
+    def = ui->progressBar->styleSheet().append(myStyleSheet);
+    //connect(this,SIGNAL(drop(int)),this,SLOT(dropScreen(int)));
+    ui->progressBar->setStyleSheet(def);
+    ui->progressBar_2->setStyleSheet(def);
+    ui->progressBar_3->setStyleSheet(def);
+    ui->progressBar_4->setStyleSheet(def);
+    ui->progressBar_5->setStyleSheet(def);
+    ui->progressBar_6->setStyleSheet(def);
+ }
 
+void MainWindow::dropScreen()
+{
+    /*qWarning() << "ololo " << i;
+    switch(i)
+    {
+    case 1:
+        ui->progressBar->setStyleSheet(def);
+        break;
+    case 2:
+        ui->progressBar_2->setStyleSheet(def);
+        break;
+    case 3:
+        ui->progressBar_3->setStyleSheet(def);
+        break;
+    case 4:
+        ui->progressBar_4->setStyleSheet(def);
+        break;
+    case 5:
+        ui->progressBar_5->setStyleSheet(def);
+        break;
+    case 6:
+        ui->progressBar_6->setStyleSheet(def);
+        break;
+    default:
+        break;
+    }
+    i = 0;*/
 }
 
  void MainWindow::updateScreen()
  {
-     ui->progressBar->setValue(audioInfo->level() * 100);
-     ui->progressBar_2->setValue(audioInfo->frequency());
+   //  ui->progressBar->setValue(audioInfo->level() * 100);
+     ui->progressBar_7->setValue(audioInfo->frequency());
      ui->lcdNumber->display(audioInfo->frequency());
-     ui->lcdNumber_2->display(audioInfo->level() * 100);
+    // ui->lcdNumber_2->display(audioInfo->level() * 100);
+     if((audioInfo->frequency() < 329 + 10)&&(audioInfo->frequency() > 329 - 10)){
+         ui->progressBar->setStyleSheet(s);
+
+         ui->progressBar_2->setStyleSheet(def);
+         ui->progressBar_3->setStyleSheet(def);
+         ui->progressBar_4->setStyleSheet(def);
+         ui->progressBar_5->setStyleSheet(def);
+         ui->progressBar_6->setStyleSheet(def);
+         i = 1;
+     }
+     if((audioInfo->frequency()<246+10)&&(audioInfo->frequency()>246-10)){
+         ui->progressBar_2->setStyleSheet(s);
+
+         ui->progressBar->setStyleSheet(def);
+         ui->progressBar_3->setStyleSheet(def);
+         ui->progressBar_4->setStyleSheet(def);
+         ui->progressBar_5->setStyleSheet(def);
+         ui->progressBar_6->setStyleSheet(def);
+         i = 2;
+     }
+     if((audioInfo->frequency()<196+10)&&(audioInfo->frequency()>196-10)){
+         ui->progressBar_3->setStyleSheet(s);
+
+         ui->progressBar->setStyleSheet(def);
+         ui->progressBar_2->setStyleSheet(def);
+         ui->progressBar_4->setStyleSheet(def);
+         ui->progressBar_5->setStyleSheet(def);
+         ui->progressBar_6->setStyleSheet(def);
+         i = 3;
+     }
+     if((audioInfo->frequency()<146+10)&&(audioInfo->frequency()>146-10)){
+         ui->progressBar_4->setStyleSheet(s);
+
+         ui->progressBar->setStyleSheet(def);
+         ui->progressBar_2->setStyleSheet(def);
+         ui->progressBar_3->setStyleSheet(def);
+         ui->progressBar_5->setStyleSheet(def);
+         ui->progressBar_6->setStyleSheet(def);
+         i = 4;
+     }
+     if((audioInfo->frequency()<110+10)&&(audioInfo->frequency()>110-10)){
+         ui->progressBar_5->setStyleSheet(s);
+
+         ui->progressBar->setStyleSheet(def);
+         ui->progressBar_2->setStyleSheet(def);
+         ui->progressBar_3->setStyleSheet(def);
+         ui->progressBar_4->setStyleSheet(def);
+         ui->progressBar_6->setStyleSheet(def);
+         i = 5;
+     }
+     if((audioInfo->frequency()<82+10)&&(audioInfo->frequency()>82-10)){
+         ui->progressBar_6->setStyleSheet(s);
+
+         ui->progressBar->setStyleSheet(def);
+         ui->progressBar_2->setStyleSheet(def);
+         ui->progressBar_3->setStyleSheet(def);
+         ui->progressBar_4->setStyleSheet(def);
+         ui->progressBar_5->setStyleSheet(def);
+         i = 6;
+     }
+    if(i != 0)
+    {
+        //QTimer::singleShot(300,this,SLOT(dropScreen()));
+    }
  }
+
 
  void MainWindow::startRecording()
  {
@@ -114,7 +228,7 @@ MainWindow::MainWindow(QWidget *parent) :
      audioInput = new QAudioInput(info, format, this);
      connect(audioInput, SIGNAL(notify()), SLOT(notifed()));
      connect(audioInfo,SIGNAL(update()),this,SLOT(updateScreen()));
-     audioInput->setBufferSize(1280 * 4 * 16);
+     audioInput->setBufferSize(1280 * 4 * 16); // 256 * 4 * 16
      audioInfo->start();
      audioInput->start(audioInfo);
  }

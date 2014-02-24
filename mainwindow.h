@@ -26,7 +26,6 @@ public:
     qreal frequency() const { return m_frequency; }
     qint64 readData(char *data, qint64 maxlen);
     qint64 writeData(const char *data, qint64 len);
-
 private:
     int Log2(int n)
     {
@@ -57,9 +56,9 @@ private:
 
     double* Calculate(double* x);
     const QAudioFormat format;
+    qreal m_level;
+    qreal m_frequency;
     quint32 m_maxAmplitude;
-    qreal m_level, m_frequency;
-
 signals:
     void update();
 };
@@ -75,12 +74,18 @@ public:
 private slots:
     void notifed();
     void updateScreen();
+    void dropScreen();
+signals:
+    void drop();
+
 
 private:
+    QString s, def;
     QAudioInput *audioInput;
     Ui::MainWindow *ui;
     AudioInfo* audioInfo;
     QAudioFormat format;
+    int i;
 };
 
 class ComplexNumber
