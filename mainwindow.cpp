@@ -4,6 +4,7 @@
 #include <QAudioFormat>
 #include <QTimer>
 #include <QAudioDeviceInfo>
+#include <math.h>
 
 const double PI = 3.14159265359;
 AudioInfo::AudioInfo(const QAudioFormat &format, QObject *parent)
@@ -60,25 +61,26 @@ qint64 AudioInfo::writeData(const char *data, qint64 len)
         double* spectrogramm = Calculate(ptr1);
         int index = 0;
         double max = 0;
-        double buf = double(format.sampleRate()) / (numSamples * format.channelCount());
-        qWarning() << buf;
-        for (int i = 1; i < 30 * 100; i++ )
+        double buf = (double(format.sampleRate()) / (numSamples * format.channelCount()));
+        for (int i = 1; i < 370. / buf; i++ )
         {
-            if (spectrogramm[i] > 0  && max < spectrogramm[i] &&
-                                        (((i * buf) < 334 && (i * buf) > 325) ||
-                                         ((i * buf) < 251 && (i * buf) > 241) ||
-                                         ((i * buf) < 201 && (i * buf) > 191) ||
-                                         ((i * buf) < 151 && (i * buf) > 141) ||
-                                         ((i * buf) < 115 && (i * buf) > 105) ||
-                                         ((i * buf) < 87 && (i * buf) > 77)))
+            if (spectrogramm[i] > 5e+8  && max < spectrogramm[i] &&
+                                        (((i * buf) < 329.8 && (i * buf) > 329.4) ||
+                                         ((i * buf) < 247 && (i * buf) > 246) ||
+                                         ((i * buf) < 197 && (i * buf) > 195) ||
+                                         ((i * buf) < 147 && (i * buf) > 145) ||
+                                         ((i * buf) < 111 && (i * buf) > 109) ||
+                                         ((i * buf) < 83 && (i * buf) > 82)))
             {
+
                 max = spectrogramm[i];
-                qWarning() << spectrogramm[i];
                 index = i;
             }
         }
         delete spectrogramm;
-        double frequency = format.sampleRate() * index / (numSamples * format.channelCount());
+        delete ptr1;
+        double frequency = index * buf;//format.sampleRate() * index / (numSamples * format.channelCount());
+        //qWarning() << frequency;
         if (frequency < 60) frequency = 0;
         m_frequency = frequency;
         maxValue = qMin(maxValue, m_maxAmplitude);
@@ -93,13 +95,13 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
+    i = new bool[6];
     ui->setupUi(this);
     int r=0,g=255,b=0;
     QString myStyleSheet = QString(" QProgressBar::chunk { background: rgb(%1,%2,%3); }").arg(QString::number(r)).arg(QString::number(g)).arg(QString::number(b));
     s = ui->progressBar->styleSheet().append(myStyleSheet);
     myStyleSheet = QString(" QProgressBar::chunk { background: rgb(255,0,0); }");
     def = ui->progressBar->styleSheet().append(myStyleSheet);
-    //connect(this,SIGNAL(drop(int)),this,SLOT(dropScreen(int)));
     ui->progressBar->setStyleSheet(def);
     ui->progressBar_2->setStyleSheet(def);
     ui->progressBar_3->setStyleSheet(def);
@@ -110,31 +112,36 @@ MainWindow::MainWindow(QWidget *parent) :
 
 void MainWindow::dropScreen()
 {
-    /*qWarning() << "ololo " << i;
-    switch(i)
+    if(i[0])
     {
-    case 1:
         ui->progressBar->setStyleSheet(def);
-        break;
-    case 2:
-        ui->progressBar_2->setStyleSheet(def);
-        break;
-    case 3:
-        ui->progressBar_3->setStyleSheet(def);
-        break;
-    case 4:
-        ui->progressBar_4->setStyleSheet(def);
-        break;
-    case 5:
-        ui->progressBar_5->setStyleSheet(def);
-        break;
-    case 6:
-        ui->progressBar_6->setStyleSheet(def);
-        break;
-    default:
-        break;
+        i[0] = false;
     }
-    i = 0;*/
+    if(i[1])
+    {
+        ui->progressBar_2->setStyleSheet(def);
+        i[1] = false;
+    }
+    if(i[2])
+    {
+        ui->progressBar_3->setStyleSheet(def);
+        i[2] = false;
+    }
+    if(i[3])
+    {
+        ui->progressBar_4->setStyleSheet(def);
+        i[3] = false;
+    }
+    if(i[4])
+    {
+        ui->progressBar_5->setStyleSheet(def);
+        i[4] = false;
+    }
+    if(i[5])
+    {
+        ui->progressBar_6->setStyleSheet(def);
+        i[5] = false;
+    }
 }
 
  void MainWindow::updateScreen()
@@ -143,69 +150,34 @@ void MainWindow::dropScreen()
      ui->progressBar_7->setValue(audioInfo->frequency());
      ui->lcdNumber->display(audioInfo->frequency());
     // ui->lcdNumber_2->display(audioInfo->level() * 100);
+     bool fl = false;
      if((audioInfo->frequency() < 329 + 10)&&(audioInfo->frequency() > 329 - 10)){
          ui->progressBar->setStyleSheet(s);
-
-         ui->progressBar_2->setStyleSheet(def);
-         ui->progressBar_3->setStyleSheet(def);
-         ui->progressBar_4->setStyleSheet(def);
-         ui->progressBar_5->setStyleSheet(def);
-         ui->progressBar_6->setStyleSheet(def);
-         i = 1;
+         i[0] = fl = true;
      }
      if((audioInfo->frequency()<246+10)&&(audioInfo->frequency()>246-10)){
          ui->progressBar_2->setStyleSheet(s);
-
-         ui->progressBar->setStyleSheet(def);
-         ui->progressBar_3->setStyleSheet(def);
-         ui->progressBar_4->setStyleSheet(def);
-         ui->progressBar_5->setStyleSheet(def);
-         ui->progressBar_6->setStyleSheet(def);
-         i = 2;
+         i[1] = fl = true;
      }
      if((audioInfo->frequency()<196+10)&&(audioInfo->frequency()>196-10)){
          ui->progressBar_3->setStyleSheet(s);
-
-         ui->progressBar->setStyleSheet(def);
-         ui->progressBar_2->setStyleSheet(def);
-         ui->progressBar_4->setStyleSheet(def);
-         ui->progressBar_5->setStyleSheet(def);
-         ui->progressBar_6->setStyleSheet(def);
-         i = 3;
+         i[2] = fl = true;
      }
      if((audioInfo->frequency()<146+10)&&(audioInfo->frequency()>146-10)){
          ui->progressBar_4->setStyleSheet(s);
-
-         ui->progressBar->setStyleSheet(def);
-         ui->progressBar_2->setStyleSheet(def);
-         ui->progressBar_3->setStyleSheet(def);
-         ui->progressBar_5->setStyleSheet(def);
-         ui->progressBar_6->setStyleSheet(def);
-         i = 4;
+         i[3] = fl = true;
      }
      if((audioInfo->frequency()<110+10)&&(audioInfo->frequency()>110-10)){
          ui->progressBar_5->setStyleSheet(s);
-
-         ui->progressBar->setStyleSheet(def);
-         ui->progressBar_2->setStyleSheet(def);
-         ui->progressBar_3->setStyleSheet(def);
-         ui->progressBar_4->setStyleSheet(def);
-         ui->progressBar_6->setStyleSheet(def);
-         i = 5;
+         i[4] = fl = true;
      }
      if((audioInfo->frequency()<82+10)&&(audioInfo->frequency()>82-10)){
          ui->progressBar_6->setStyleSheet(s);
-
-         ui->progressBar->setStyleSheet(def);
-         ui->progressBar_2->setStyleSheet(def);
-         ui->progressBar_3->setStyleSheet(def);
-         ui->progressBar_4->setStyleSheet(def);
-         ui->progressBar_5->setStyleSheet(def);
-         i = 6;
+         i[5] = fl = true;
      }
-    if(i != 0)
+    if(fl)
     {
-        //QTimer::singleShot(300,this,SLOT(dropScreen()));
+        QTimer::singleShot(500,this,SLOT(dropScreen()));
     }
  }
 
@@ -228,7 +200,7 @@ void MainWindow::dropScreen()
      audioInput = new QAudioInput(info, format, this);
      connect(audioInput, SIGNAL(notify()), SLOT(notifed()));
      connect(audioInfo,SIGNAL(update()),this,SLOT(updateScreen()));
-     audioInput->setBufferSize(1280 * 4 * 16); // 256 * 4 * 16
+     audioInput->setBufferSize(1280 * 8 * 16); // 256 * 4 * 16
      audioInfo->start();
      audioInput->start(audioInfo);
  }
@@ -241,7 +213,7 @@ void MainWindow::dropScreen()
  {
      const int channelBytes = format.sampleSize() / 8;
      const int sampleBytes = format.channelCount() * channelBytes;
-     const int numSamples = 16192 / sampleBytes;
+     const int numSamples = (16384 * 2) / sampleBytes;
      int lenght;
      int bitsInLenght;
      if (IsPowerOfTwo((numSamples * format.channelCount())))

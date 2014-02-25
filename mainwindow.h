@@ -55,6 +55,8 @@ private:
     }
 
     double* Calculate(double* x);
+    double *FilterLF(double nF, int N, double *x, double BW);
+    double* Convolution(double *x, int N, double *h, int M, double *st);
     const QAudioFormat format;
     qreal m_level;
     qreal m_frequency;
@@ -85,7 +87,7 @@ private:
     Ui::MainWindow *ui;
     AudioInfo* audioInfo;
     QAudioFormat format;
-    int i;
+    bool *i;
 };
 
 class ComplexNumber
