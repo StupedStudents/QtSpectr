@@ -1,10 +1,5 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include <QAudioInput>
-#include <QAudioFormat>
-#include <QTimer>
-#include <QAudioDeviceInfo>
-#include <math.h>
 
 const double PI = 3.14159265359;
 AudioInfo::AudioInfo(const QAudioFormat &format, QObject *parent)
@@ -59,8 +54,8 @@ qint64 AudioInfo::writeData(const char *data, qint64 len)
         }
 
         double* spectrogramm = Calculate(ptr1);
-        int index = 0;
-        double max = 0;
+        int index = 0, tmp_index = 0;
+        double max = 0, tmp_max = 0;
         double buf = (double(format.sampleRate()) / (numSamples * format.channelCount()));
         for (int i = 1; i < 370. / buf; i++ )
         {
@@ -76,13 +71,22 @@ qint64 AudioInfo::writeData(const char *data, qint64 len)
                 max = spectrogramm[i];
                 index = i;
             }
+            if(spectrogramm[i] > tmp_max)
+            {
+                tmp_max = spectrogramm[i];
+                tmp_index = i;
+            }
         }
         delete spectrogramm;
         delete ptr1;
-        double frequency = index * buf;//format.sampleRate() * index / (numSamples * format.channelCount());
+        double frequency_ = index * buf;//format.sampleRate() * index / (numSamples * format.channelCount());
         //qWarning() << frequency;
-        if (frequency < 60) frequency = 0;
-        m_frequency = frequency;
+        if (frequency_ < 60) frequency_ = 0;
+        m_frequency = frequency_;
+
+        double fre_ = tmp_index * buf;
+        frequency_tmp = fre_;
+
         maxValue = qMin(maxValue, m_maxAmplitude);
         m_level = qreal(maxValue) / m_maxAmplitude;
     }
@@ -146,10 +150,10 @@ void MainWindow::dropScreen()
 
  void MainWindow::updateScreen()
  {
-   //  ui->progressBar->setValue(audioInfo->level() * 100);
-     ui->progressBar_7->setValue(audioInfo->frequency());
+     ui->progressBar_8->setValue(audioInfo->level() * 100);
+     ui->progressBar_7->setValue(audioInfo->freq());
      ui->lcdNumber->display(audioInfo->frequency());
-    // ui->lcdNumber_2->display(audioInfo->level() * 100);
+     ui->lcdNumber_2->display(audioInfo->freq());
      bool fl = false;
      if((audioInfo->frequency() < 329 + 10)&&(audioInfo->frequency() > 329 - 10)){
          ui->progressBar->setStyleSheet(s);
@@ -181,6 +185,17 @@ void MainWindow::dropScreen()
     }
  }
 
+ void MainWindow::deviceChanged(int index)
+ {
+     audioInfo->stop();
+     audioInput->stop();
+     audioInput->disconnect(this);
+     delete audioInput;
+
+     info = ui->comboBox->itemData(index).value<QAudioDeviceInfo>();
+     changeDev();
+ }
+
 
  void MainWindow::startRecording()
  {
@@ -190,16 +205,29 @@ void MainWindow::dropScreen()
      format.setCodec("audio/pcm");
      format.setByteOrder(QAudioFormat::LittleEndian);
      format.setSampleType(QAudioFormat::SignedInt);
-     QAudioDeviceInfo info = QAudioDeviceInfo::availableDevices(QAudio::AudioInput).first();
+
+     QList<QAudioDeviceInfo> devices = QAudioDeviceInfo::availableDevices(QAudio::AudioInput);
+     for(int i = 0; i < devices.size(); ++i)
+         ui->comboBox->addItem(devices.at(i).deviceName(), qVariantFromValue(devices.at(i)));
+
+     connect(ui->comboBox, SIGNAL(activated(int)), SLOT(deviceChanged(int)));
+
+     info = QAudioDeviceInfo::availableDevices(QAudio::AudioInput).first();
      if (!info.isFormatSupported(format)) {
          qWarning()<<"default format not supported try to use nearest";
          format = info.nearestFormat(format);
          qWarning() << format.sampleRate();
      }
      audioInfo = new AudioInfo(format, this);
+     connect(audioInfo,SIGNAL(update()),this,SLOT(updateScreen()));
+     changeDev();
+
+ }
+
+ void MainWindow::changeDev()
+ {
      audioInput = new QAudioInput(info, format, this);
      connect(audioInput, SIGNAL(notify()), SLOT(notifed()));
-     connect(audioInfo,SIGNAL(update()),this,SLOT(updateScreen()));
      audioInput->setBufferSize(1280 * 8 * 16); // 256 * 4 * 16
      audioInfo->start();
      audioInput->start(audioInfo);
@@ -261,5 +289,6 @@ void MainWindow::dropScreen()
 
 MainWindow::~MainWindow()
 {
+    delete i;
     delete ui;
 }

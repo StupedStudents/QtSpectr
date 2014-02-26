@@ -3,10 +3,6 @@
 
 #include <QMainWindow>
 #include <QtMultimedia>
-#include <QBuffer>
-#include <iostream>
-#include <vector>
-
 
 namespace Ui {
 class MainWindow;
@@ -24,8 +20,10 @@ public:
     void stop();
     qreal level() const { return m_level; }
     qreal frequency() const { return m_frequency; }
+    qreal freq() const { return frequency_tmp; }
     qint64 readData(char *data, qint64 maxlen);
     qint64 writeData(const char *data, qint64 len);
+
 private:
     int Log2(int n)
     {
@@ -61,6 +59,7 @@ private:
     qreal m_level;
     qreal m_frequency;
     quint32 m_maxAmplitude;
+    qreal frequency_tmp;
 signals:
     void update();
 };
@@ -73,7 +72,9 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
     void startRecording();
+    void changeDev();
 private slots:
+    void deviceChanged(int index);
     void notifed();
     void updateScreen();
     void dropScreen();
@@ -88,6 +89,7 @@ private:
     AudioInfo* audioInfo;
     QAudioFormat format;
     bool *i;
+    QAudioDeviceInfo info;
 };
 
 class ComplexNumber
